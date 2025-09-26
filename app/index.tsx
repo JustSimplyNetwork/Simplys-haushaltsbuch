@@ -7,12 +7,14 @@ import { useTransactions } from '../hooks/useTransactions';
 import BudgetSummaryCard from '../components/BudgetSummaryCard';
 import TransactionCard from '../components/TransactionCard';
 import AddTransactionSheet from '../components/AddTransactionSheet';
+import BankSettingsSheet from '../components/BankSettingsSheet';
 import Icon from '../components/Icon';
 import { Transaction } from '../types/Transaction';
 
 export default function MainScreen() {
   const { transactions, loading, addTransaction, updateTransaction, deleteTransaction, getBudgetSummary } = useTransactions();
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
+  const [isBankSettingsVisible, setIsBankSettingsVisible] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
 
   const budgetSummary = getBudgetSummary();
@@ -89,9 +91,15 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={commonStyles.container}>
       <ScrollView style={commonStyles.content} showsVerticalScrollIndicator={false}>
-        {/* Header - Removed the plus button */}
+        {/* Header with Settings */}
         <View style={styles.header}>
           <Text style={commonStyles.title}>Haushaltsbuch</Text>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => setIsBankSettingsVisible(true)}
+          >
+            <Icon name="settings-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
         {/* Budget Summary */}
@@ -136,7 +144,7 @@ export default function MainScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button - Only one plus button now */}
+      {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setIsAddSheetVisible(true)}
@@ -151,6 +159,12 @@ export default function MainScreen() {
         onSave={editingTransaction ? handleEditTransaction : handleAddTransaction}
         editTransaction={editingTransaction}
         existingTransactions={transactions}
+      />
+
+      {/* Bank Settings Sheet */}
+      <BankSettingsSheet
+        isVisible={isBankSettingsVisible}
+        onClose={() => setIsBankSettingsVisible(false)}
       />
     </SafeAreaView>
   );
@@ -167,6 +181,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   section: {
     marginBottom: 20,

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Transaction, BudgetSummary } from '../types/Transaction';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePayPalIntegration } from './usePayPalIntegration';
 
 const STORAGE_KEY = 'household_transactions';
 
@@ -104,6 +105,9 @@ export const useTransactions = () => {
       monthlyBalance: monthlyIncome - monthlyExpenses,
     };
   };
+
+  // Use PayPal integration hook
+  usePayPalIntegration(transactions, addTransaction);
 
   return {
     transactions,
