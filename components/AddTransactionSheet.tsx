@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  FlatList,
 } from 'react-native';
 import { colors, commonStyles, buttonStyles } from '../styles/commonStyles';
 import { Transaction } from '../types/Transaction';
@@ -22,6 +23,7 @@ interface AddTransactionSheetProps {
   onClose: () => void;
   onSave: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
   editTransaction?: Transaction;
+  existingTransactions?: Transaction[];
 }
 
 const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
@@ -29,6 +31,7 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
   onClose,
   onSave,
   editTransaction,
+  existingTransactions = [],
 }) => {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -40,6 +43,8 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
   const [recurringType, setRecurringType] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'>('monthly');
   const [recurringInterval, setRecurringInterval] = useState('1');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     if (editTransaction) {
@@ -57,6 +62,22 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
     }
   }, [editTransaction, isVisible]);
 
+  useEffect(() => {
+    if (title.length > 0) {
+      const filteredSuggestions = existingTransactions
+        .filter(t => t.title.toLowerCase().includes(title.toLowerCase()) && t.title !== title)
+        .map(t => t.title)
+        .filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
+        .slice(0, 5); // Limit to 5 suggestions
+      
+      setSuggestions(filteredSuggestions);
+      setShowSuggestions(filteredSuggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
+  }, [title, existingTransactions]);
+
   const resetForm = () => {
     setTitle('');
     setAmount('');
@@ -67,11 +88,18 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
     setIsRecurring(false);
     setRecurringType('monthly');
     setRecurringInterval('1');
+    setShowSuggestions(false);
+    setSuggestions([]);
   };
 
   const handleSave = () => {
-    if (!title.trim() || !amount.trim() || !category) {
-      Alert.alert('Fehler', 'Bitte füllen Sie alle Pflichtfelder aus.');
+    if (!title.trim()) {
+      Alert.alert('Fehler', 'Bitte geben Sie einen Namen ein.');
+      return;
+    }
+
+    if (!amount.trim()) {
+      Alert.alert('Fehler', 'Bitte geben Sie einen Betrag ein.');
       return;
     }
 
@@ -85,7 +113,7 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
       title: title.trim(),
       amount: numericAmount,
       type,
-      category,
+      category: category || '', // Category is now optional
       date,
       isRecurring,
       recurringType: isRecurring ? recurringType : undefined,
@@ -98,6 +126,18 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
     if (!editTransaction) {
       resetForm();
     }
+  };
+
+  const handleSuggestionPress = (suggestion: string) => {
+    const existingTransaction = existingTransactions.find(t => t.title === suggestion);
+    if (existingTransaction) {
+      setTitle(suggestion);
+      setType(existingTransaction.type);
+      setCategory(existingTransaction.category);
+      setDescription(existingTransaction.description || '');
+      // Don't set amount and date from suggestion, let user input these
+    }
+    setShowSuggestions(false);
   };
 
   const filteredCategories = defaultCategories.filter(cat => cat.type === type);
@@ -154,9 +194,9 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
           </View>
         </View>
 
-        {/* Title */}
+        {/* Title with Suggestions */}
         <View style={styles.section}>
-          <Text style={styles.label}>Titel *</Text>
+          <Text style={styles.label}>Name *</Text>
           <TextInput
             style={styles.input}
             value={title}
@@ -164,6 +204,22 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
             placeholder="z.B. Gehalt, Miete, Einkaufen..."
             placeholderTextColor={colors.textSecondary}
           />
+          
+          {showSuggestions && (
+            <View style={styles.suggestionsContainer}>
+              <Text style={styles.suggestionsLabel}>Vorschläge:</Text>
+              {suggestions.map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSuggestionPress(suggestion)}
+                >
+                  <Icon name="time-outline" size={16} color={colors.textSecondary} />
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Amount */}
@@ -181,8 +237,26 @@ const AddTransactionSheet: React.FC<AddTransactionSheetProps> = ({
 
         {/* Category */}
         <View style={styles.section}>
-          <Text style={styles.label}>Kategorie *</Text>
+          <Text style={styles.label}>Kategorie (optional)</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            {/* Add "No Category" option */}
+            <TouchableOpacity
+              style={[
+                styles.categoryButton,
+                category === '' && styles.categoryButtonActive,
+                { borderColor: colors.textSecondary }
+              ]}
+              onPress={() => setCategory('')}
+            >
+              <Icon name="remove-outline" size={20} color={category === '' ? 'white' : colors.textSecondary} />
+              <Text style={[
+                styles.categoryButtonText,
+                { color: category === '' ? 'white' : colors.textSecondary }
+              ]}>
+                Keine
+              </Text>
+            </TouchableOpacity>
+            
             {filteredCategories.map((cat) => (
               <TouchableOpacity
                 key={cat.id}
@@ -360,6 +434,29 @@ const styles = StyleSheet.create({
   textArea: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  suggestionsContainer: {
+    marginTop: 8,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    padding: 12,
+  },
+  suggestionsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 8,
   },
   typeContainer: {
     flexDirection: 'row',

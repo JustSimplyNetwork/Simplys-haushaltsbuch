@@ -89,15 +89,9 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={commonStyles.container}>
       <ScrollView style={commonStyles.content} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        {/* Header - Removed the plus button */}
         <View style={styles.header}>
           <Text style={commonStyles.title}>Haushaltsbuch</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setIsAddSheetVisible(true)}
-          >
-            <Icon name="add" size={24} color="white" />
-          </TouchableOpacity>
         </View>
 
         {/* Budget Summary */}
@@ -142,7 +136,7 @@ export default function MainScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Only one plus button now */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setIsAddSheetVisible(true)}
@@ -156,6 +150,7 @@ export default function MainScreen() {
         onClose={closeSheet}
         onSave={editingTransaction ? handleEditTransaction : handleAddTransaction}
         editTransaction={editingTransaction}
+        existingTransactions={transactions}
       />
     </SafeAreaView>
   );
@@ -172,16 +167,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
   },
   section: {
     marginBottom: 20,
